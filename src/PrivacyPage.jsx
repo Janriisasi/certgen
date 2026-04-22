@@ -256,12 +256,6 @@ export default function PrivacyPage({ onBack }) {
             >
               CertGen
             </span>
-            <span
-              className="bg-[#FDC800] border-[3px] border-[#1C293C] px-2 py-[2px] text-[11px] font-bold tracking-[2px]"
-              style={{ fontFamily: "'Space Mono', monospace" }}
-            >
-              v2.0
-            </span>
           </a>
 
           <button
