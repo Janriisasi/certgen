@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
-import { Analytics } from "@vercel/analytics/web";
+import { Analytics } from "@vercel/analytics/react";
 import useCertGenerator from "./hooks/useCertGenerator";
 import DropZone from "./components/DropZone";
 import PlacementEditor from "./components/PlacementEditor";
