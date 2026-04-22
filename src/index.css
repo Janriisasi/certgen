@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-surface text-ink font-sans;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(28,41,60,0.07) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  ::selection {
+    background: #FDC800;
+    color: #1C293C;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FBFBF9;
+    border-left: 2px solid #1C293C;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1C293C;
+  }
+}
+
+@layer components {
+  .neo-card {
+    @apply bg-surface border-3 border-ink shadow-neo rounded-none;
+  }
+
+  .neo-btn {
+    @apply inline-flex items-center justify-center gap-2 font-bold border-3 border-ink
+           shadow-neo transition-all duration-100 cursor-pointer select-none
+           active:translate-x-1 active:translate-y-1 active:shadow-none;
+  }
+
+  .neo-btn-primary {
+    @apply neo-btn bg-primary text-ink px-5 py-3 text-sm uppercase tracking-widest;
+  }
+
+  .neo-btn-secondary {
+    @apply neo-btn bg-surface text-ink px-5 py-3 text-sm uppercase tracking-widest
+           hover:bg-ink hover:text-surface;
+  }
+
+  .neo-btn-danger {
+    @apply neo-btn bg-danger text-white px-5 py-3 text-sm uppercase tracking-widest;
+  }
+
+  .neo-input {
+    @apply bg-surface border-3 border-ink px-4 py-3 text-sm font-medium w-full
+           outline-none focus:ring-0 focus:border-secondary transition-colors;
+  }
+
+  .neo-label {
+    @apply block text-[11px] font-bold uppercase tracking-widest text-ink/60 mb-1.5;
+  }
+
+  .neo-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 border-2 border-ink text-[10px]
+           font-black uppercase tracking-wider;
+  }
+}
+
+/* Step connector line */
+.step-line::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 24px;
+  background: #1C293C;
+  transform: translateX(-50%);
+}
+
+/* Progress bar stripe animation */
+@keyframes stripe-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
+.progress-stripe {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255,255,255,0.15) 10px,
+    rgba(255,255,255,0.15) 20px
+  );
+  background-size: 40px 40px;
+  animation: stripe-move 0.8s linear infinite;
+}
+
+/* Hover lift for neo cards */
+.neo-hover {
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.neo-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px #1C293C;
+}
