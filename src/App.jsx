@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
+import { Analytics } from "@vercel/analytics/web";
 import useCertGenerator from "./hooks/useCertGenerator";
 import DropZone from "./components/DropZone";
 import PlacementEditor from "./components/PlacementEditor";
@@ -50,6 +51,7 @@ export default function App({ onGoBack }) {
           error: { iconTheme: { primary: "#DC2626", secondary: "#FBFBF9" } },
         }}
       />
+      <Analytics />
 
       {/* ── TOP BAR ───────────────────────────────────────────────────────── */}
       <header className="border-b-3 border-ink bg-ink text-surface sticky top-0 z-50">
