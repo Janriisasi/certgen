@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import toast from "react-hot-toast";
 
@@ -54,12 +54,21 @@ const safeFilename = (name) =>
 export const parseExcelFile = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(e.target.result);
+        const worksheet = workbook.worksheets[0];
+
+        if (!worksheet) {
+          reject(new Error("No worksheet found in the file."));
+          return;
+        }
+
+        const rows = [];
+        worksheet.eachRow({ includeEmpty: false }, (row) => {
+          rows.push(row.values.slice(1)); // slice(1) because exceljs includes index 0
+        });
 
         if (rows.length < 2) {
           reject(
@@ -71,7 +80,11 @@ export const parseExcelFile = (file) => {
         }
 
         // Auto-detect the name column: look for header containing "name" (case-insensitive)
-        const headers = rows[0].map((h) => String(h).toLowerCase().trim());
+        const headers = rows[0].map((h) =>
+          String(h ?? "")
+            .toLowerCase()
+            .trim(),
+        );
         let nameColIndex = headers.findIndex((h) => h.includes("name"));
         if (nameColIndex === -1) nameColIndex = 0; // fallback: use first column
 
@@ -82,7 +95,7 @@ export const parseExcelFile = (file) => {
 
         resolve({
           names,
-          headers: rows[0].map((h) => String(h)),
+          headers: rows[0].map((h) => String(h ?? "")),
           nameColIndex,
           totalRows: rows.length - 1,
         });
