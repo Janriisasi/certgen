@@ -10,7 +10,7 @@ import GenerateProgress from "./components/GenerateProgress";
 import GenerationReport from "./components/GenerationReport";
 import ValidationPanel from "./components/ValidationPanel";
 import StepBadge from "./components/StepBadge";
-import PdfBuildModal from "./components/PdfBuildModal";
+import PdfBuildModal from "./components/PDFBuildModal";
 
 function useDebounce(fn, delay) {
   const timer = useRef(null);
