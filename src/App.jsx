@@ -7,9 +7,11 @@ import DropZone from "./components/DropZone";
 import PlacementEditor from "./components/PlacementEditor";
 import DelegateList from "./components/DelegateList";
 import GenerateProgress from "./components/GenerateProgress";
+import GenerationReport from "./components/GenerationReport";
+import ValidationPanel from "./components/ValidationPanel";
 import StepBadge from "./components/StepBadge";
+import PdfBuildModal from "./components/PdfBuildModal";
 
-// ─── Debounce helper ──────────────────────────────────────────────────────────
 function useDebounce(fn, delay) {
   const timer = useRef(null);
   return (...args) => {
@@ -22,7 +24,6 @@ export default function App({ onGoBack }) {
   const cert = useCertGenerator();
   const debouncedPreview = useDebounce(cert.updatePreview, 300);
 
-  // Re-render preview whenever placement or previewName changes
   useEffect(() => {
     if (!cert.templateUrl) return;
     debouncedPreview(cert.previewName, cert.placement);
@@ -30,7 +31,6 @@ export default function App({ onGoBack }) {
 
   const step1Done = !!cert.templateUrl;
   const step2Done = cert.delegates.length > 0;
-  const step3Done = step1Done; // placement always available once template is set
   const readyToGenerate = step1Done && step2Done && !cert.generating;
 
   return (
@@ -95,7 +95,7 @@ export default function App({ onGoBack }) {
         <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="inline-block neo-badge bg-ink text-primary mb-4">
-              100% Free · No Sign-up · Runs in Browser
+              100% Free · No Sign-up · Runs in Browser · Web Worker Powered
             </div>
             <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
               Bulk
@@ -107,12 +107,13 @@ export default function App({ onGoBack }) {
           </div>
           <p className="max-w-xs text-sm font-semibold text-ink/70 md:text-right leading-relaxed">
             Upload your Excel list + certificate template. We overlay each name
-            automatically. Download all as a ZIP.
+            automatically. Download as ZIP or PDF — with validation, retry, and
+            generation reports.
           </p>
         </div>
       </section>
 
-      {/* ── STEPS OVERVIEW (mobile-friendly) ─────────────────────────────── */}
+      {/* ── STEPS ─────────────────────────────────────────────────────────── */}
       <div className="border-b-3 border-ink bg-surface">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap gap-6 items-center">
           <StepBadge
@@ -131,21 +132,21 @@ export default function App({ onGoBack }) {
           <div className="w-8 h-0.5 bg-ink/20 hidden sm:block" />
           <StepBadge
             number="3"
-            label="Position Name"
+            label="Validate & Position"
             active={step1Done && step2Done}
             done={cert.done}
           />
           <div className="w-8 h-0.5 bg-ink/20 hidden sm:block" />
           <StepBadge
             number="4"
-            label="Generate & Download"
+            label="Generate ZIP / PDF"
             active={readyToGenerate}
             done={cert.done}
           />
         </div>
       </div>
 
-      {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
+      {/* ── MAIN ──────────────────────────────────────────────────────────── */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-8">
           {/* ── LEFT COLUMN ───────────────────────────────────────────────── */}
@@ -159,7 +160,9 @@ export default function App({ onGoBack }) {
               </div>
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="neo-label mb-3">Certificate Template (PNG)</p>
+                  <p className="neo-label mb-3">
+                    Certificate Template (PNG/JPG)
+                  </p>
                   <DropZone
                     accept="image/png,image/jpeg,image/jpg"
                     onFile={cert.loadTemplate}
@@ -176,13 +179,12 @@ export default function App({ onGoBack }) {
                     onFile={cert.loadExcel}
                     file={cert.excelFile}
                     label="Drop Excel / CSV"
-                    hint="Must have a column with 'Name' in the header"
+                    hint='Must have a column with "Name" in the header'
                     icon="📋"
                     disabled={!cert.templateUrl}
                   />
                 </div>
               </div>
-
               {/* Excel format hint */}
               <div className="px-5 pb-5">
                 <div className="border-3 border-ink/20 p-3 bg-ink/5">
@@ -194,25 +196,28 @@ export default function App({ onGoBack }) {
                       <thead>
                         <tr className="bg-primary">
                           {["Name", "Church", "Role", "Payment"].map((h) => (
-                            <td
+                            <th
                               key={h}
-                              className="border-2 border-ink px-3 py-1 font-black uppercase text-[10px]"
+                              className="border-2 border-ink px-3 py-1.5 font-black text-left"
                             >
                               {h}
-                            </td>
+                            </th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {[
-                          ["Maria Santos", "Capiz EC", "Camper", "Paid"],
-                          ["Juan dela Cruz", "Hilltop BC", "Camper", "Paid"],
+                          ["Juan dela Cruz", "BCLC", "Delegate", "Paid"],
+                          ["Maria Santos", "JCLC", "Staff", "Paid"],
                         ].map((row, i) => (
-                          <tr key={i} className="hover:bg-ink/5">
+                          <tr
+                            key={i}
+                            className={i % 2 === 0 ? "bg-surface" : "bg-ink/5"}
+                          >
                             {row.map((cell, j) => (
                               <td
                                 key={j}
-                                className="border-2 border-ink/20 px-3 py-1 text-ink/70"
+                                className="border-2 border-ink/20 px-3 py-1"
                               >
                                 {cell}
                               </td>
@@ -222,33 +227,23 @@ export default function App({ onGoBack }) {
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-[12px] text-black mt-2 font-medium background-clip-text bg-yellow-500">
-                    Reminder: The system auto-detects any column containing the
-                    word <b>Name</b>. Other columns are <b>IGNORED.</b>
-                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Delegates List */}
+            {/* Delegate List */}
+            <DelegateList
+              delegates={cert.delegates}
+              excelMeta={cert.excelMeta}
+            />
+
+            {/* ── VALIDATION PANEL ────────────────────────────────────────── */}
             <AnimatePresence>
-              {cert.delegates.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                >
-                  <DelegateList
-                    delegates={cert.delegates}
-                    excelMeta={cert.excelMeta}
-                    onClear={() => {
-                      cert.loadExcel &&
-                        (() => {
-                          // just clear state manually
-                        })();
-                    }}
-                  />
-                </motion.div>
+              {cert.validationErrors && cert.validationErrors.length > 0 && (
+                <ValidationPanel
+                  errors={cert.validationErrors}
+                  onDismiss={() => cert.runValidation && undefined}
+                />
               )}
             </AnimatePresence>
 
@@ -256,107 +251,125 @@ export default function App({ onGoBack }) {
             <AnimatePresence>
               {cert.templateUrl && (
                 <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   className="neo-card"
                 >
                   <div className="p-5 border-b-3 border-ink bg-ink text-surface">
                     <p className="font-black text-xs uppercase tracking-widest">
-                      Step 3 — Position Name on Certificate
+                      Step 3 — Position the Name Text
                     </p>
                   </div>
                   <div className="p-5">
                     <PlacementEditor
                       placement={cert.placement}
                       onChange={cert.updatePlacement}
+                      templateDimensions={cert.templateDimensions}
                     />
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* STEP 4 — Generate */}
+            {/* STEP 4 — Generate buttons */}
             <AnimatePresence>
-              {readyToGenerate && !cert.generating && !cert.done && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="neo-card border-primary bg-primary p-6"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <p className="font-black text-lg uppercase tracking-tight">
-                        Ready to Generate!
+              {readyToGenerate &&
+                !cert.generating &&
+                !cert.generationReport && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="neo-card"
+                  >
+                    <div className="p-5 border-b-3 border-ink bg-ink text-surface flex items-center justify-between">
+                      <p className="font-black text-xs uppercase tracking-widest">
+                        Step 4 — Generate & Download
                       </p>
-                      <p className="text-sm font-medium text-ink/70">
-                        {cert.delegates.length} certificate
-                        {cert.delegates.length !== 1 ? "s" : ""} will be created
-                        and downloaded as a ZIP.
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                        <span className="text-[10px] font-bold text-surface/60 uppercase">
+                          Ready
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-5 space-y-4">
+                      {/* Pre-validate CTA */}
+                      <div className="border-3 border-ink/20 p-4 bg-ink/5 flex items-center justify-between gap-4 flex-wrap">
+                        <div>
+                          <p className="font-black text-xs uppercase tracking-widest">
+                            Pre-Validation Check
+                          </p>
+                          <p className="text-xs text-ink/60 font-medium mt-0.5">
+                            Scan for missing names and text overflow before
+                            generating.
+                          </p>
+                        </div>
+                        <button
+                          onClick={cert.runValidation}
+                          className="neo-btn border-3 border-ink bg-surface font-black text-xs uppercase tracking-widest px-4 py-2 shadow-[3px_3px_0px_#1C293C] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                        >
+                          🔍 Run Validation
+                        </button>
+                      </div>
+
+                      {/* Generate buttons */}
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          onClick={cert.generateAll}
+                          className="flex-1 neo-btn border-3 border-ink bg-primary font-black text-sm uppercase tracking-widest py-4 shadow-[4px_4px_0px_#1C293C] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-3"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+                            />
+                          </svg>
+                          Generate {cert.delegates.length} Certificates — ZIP
+                        </button>
+                        <button
+                          onClick={cert.generatePdf}
+                          className="neo-btn border-3 border-ink bg-secondary text-white font-black text-sm uppercase tracking-widest py-4 px-6 shadow-[4px_4px_0px_#1C293C] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all flex items-center justify-center gap-3"
+                        >
+                          📄 Export PDF
+                        </button>
+                      </div>
+
+                      <p className="text-[10px] font-bold text-ink/40 uppercase tracking-widest text-center">
+                        Processed in batches of 15 · Web Worker · No UI Freeze ·
+                        Rate Limited
                       </p>
                     </div>
-                    <button
-                      onClick={cert.generateAll}
-                      className="neo-btn-secondary whitespace-nowrap bg-ink text-primary border-ink hover:bg-ink/80 px-8 py-4 text-base"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                        />
-                      </svg>
-                      Generate & Download ZIP
-                    </button>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Progress bar */}
+            <AnimatePresence>
+              {cert.generating && (
+                <GenerateProgress progress={cert.progress} done={false} />
               )}
             </AnimatePresence>
 
-            {/* Progress */}
+            {/* Generation Report */}
             <AnimatePresence>
-              {(cert.generating || cert.done) && (
-                <GenerateProgress progress={cert.progress} done={cert.done} />
-              )}
-            </AnimatePresence>
-
-            {/* Done — re-download */}
-            <AnimatePresence>
-              {cert.done && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="neo-card p-5 bg-success/10 border-success flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                >
-                  <div>
-                    <p className="font-black uppercase tracking-widest text-success">
-                      ✓ Certificates Generated
-                    </p>
-                    <p className="text-xs font-medium text-ink/60 mt-0.5">
-                      Your ZIP was automatically downloaded. Want to regenerate
-                      with different settings?
-                    </p>
-                  </div>
-                  <div className="flex gap-3 flex-wrap">
-                    <button
-                      onClick={cert.generateAll}
-                      className="neo-btn-primary text-xs px-4 py-2"
-                    >
-                      ↺ Re-generate
-                    </button>
-                    <button
-                      onClick={cert.reset}
-                      className="neo-btn-secondary text-xs px-4 py-2"
-                    >
-                      Start Over
-                    </button>
-                  </div>
-                </motion.div>
+              {cert.generationReport && !cert.generating && (
+                <GenerationReport
+                  report={cert.generationReport}
+                  failedItems={cert.failedItems}
+                  onRetryFailed={
+                    cert.failedItems.length > 0 ? cert.retryFailed : null
+                  }
+                  onRegenerate={cert.generateAll}
+                  onReset={cert.reset}
+                  onDownloadPdf={cert.generatePdf}
+                />
               )}
             </AnimatePresence>
           </div>
@@ -374,9 +387,7 @@ export default function App({ onGoBack }) {
                   </span>
                 )}
               </div>
-
               <div className="p-4 space-y-4">
-                {/* Preview name input */}
                 <div>
                   <label className="neo-label">Preview Name</label>
                   <input
@@ -385,10 +396,9 @@ export default function App({ onGoBack }) {
                     onChange={(e) => cert.setPreviewName(e.target.value)}
                     className="neo-input"
                     placeholder="Type a name to preview…"
+                    maxLength={120}
                   />
                 </div>
-
-                {/* Preview canvas */}
                 <div className="border-3 border-ink min-h-40 bg-ink/5 flex items-center justify-center overflow-hidden">
                   {cert.previewCanvas ? (
                     <img
@@ -432,13 +442,11 @@ export default function App({ onGoBack }) {
                     </div>
                   )}
                 </div>
-
-                {/* Download single preview */}
                 {cert.previewCanvas && (
                   <a
                     href={cert.previewCanvas}
                     download={`preview_${cert.previewName || "cert"}.png`}
-                    className="neo-btn-secondary w-full justify-center text-xs"
+                    className="neo-btn-secondary w-full justify-center text-xs flex items-center gap-2"
                   >
                     <svg
                       className="w-4 h-4"
@@ -459,7 +467,55 @@ export default function App({ onGoBack }) {
               </div>
             </div>
 
-            {/* Tips card */}
+            {/* Security badge */}
+            <div className="neo-card border-3 border-ink">
+              <div className="p-4 border-b-3 border-ink bg-success/10">
+                <p className="font-black text-xs uppercase tracking-widest text-success">
+                  🔒 Security & Performance
+                </p>
+              </div>
+              <div className="p-4 space-y-3">
+                {[
+                  {
+                    icon: "🧵",
+                    text: "Web Workers — true parallel processing, zero UI freeze",
+                  },
+                  {
+                    icon: "📦",
+                    text: "Chunked batches of 15 — prevents browser memory overload",
+                  },
+                  {
+                    icon: "🛡️",
+                    text: "Rate limited — max 5 generations/minute to prevent abuse",
+                  },
+                  {
+                    icon: "✅",
+                    text: "Pre-validation catches bad rows before any processing starts",
+                  },
+                  {
+                    icon: "🔁",
+                    text: "Retry failed — redo only errored rows, not the whole batch",
+                  },
+                  {
+                    icon: "🗑️",
+                    text: "Auto cleanup — memory freed after each batch (GC-friendly)",
+                  },
+                  {
+                    icon: "🔐",
+                    text: "Everything runs in your browser. Zero server uploads.",
+                  },
+                ].map(({ icon, text }) => (
+                  <div key={text} className="flex gap-3 text-xs">
+                    <span className="flex-shrink-0">{icon}</span>
+                    <p className="text-ink/70 font-medium leading-relaxed">
+                      {text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tips */}
             <div className="neo-card">
               <div className="p-4 border-b-3 border-ink bg-primary">
                 <p className="font-black text-xs uppercase tracking-widest">
@@ -470,23 +526,23 @@ export default function App({ onGoBack }) {
                 {[
                   {
                     icon: "🎨",
-                    text: "Design in Canva → Export as PNG (high quality). Leave a blank area where the name goes.",
+                    text: "Design in Canva → Export as PNG. Leave a blank area where the name goes.",
                   },
                   {
                     icon: "📊",
-                    text: 'Excel column header must contain the word "name" (e.g. "Full Name", "Delegate Name"). Other columns are ignored.',
+                    text: 'Excel header must contain "name" (e.g. "Full Name"). Other columns are ignored.',
                   },
                   {
                     icon: "🎯",
-                    text: "Use the Live Preview to fine-tune X/Y position before generating all certificates.",
+                    text: "Run Pre-Validation before generating to catch overflowing names early.",
+                  },
+                  {
+                    icon: "📄",
+                    text: "Use PDF export for easy printing — all certs in one file, one per page.",
                   },
                   {
                     icon: "📦",
-                    text: "Certificates are numbered in the ZIP (001_Name.png) matching the order in your Excel.",
-                  },
-                  {
-                    icon: "🔒",
-                    text: "Everything runs in your browser. No files are uploaded to any server.",
+                    text: "ZIP certificates are numbered (001_Name.png) matching your Excel order.",
                   },
                 ].map(({ icon, text }) => (
                   <div key={text} className="flex gap-3 text-xs">
@@ -518,6 +574,13 @@ export default function App({ onGoBack }) {
           <p className="text-surface/40 text-xs font-mono">Created by Sasi</p>
         </div>
       </footer>
+
+      {/* ── PDF BUILD MODAL ───────────────────────────────────────────────── */}
+      <PdfBuildModal
+        open={cert.pdfPhase === "building"}
+        current={cert.pdfProgress.current}
+        total={cert.pdfProgress.total}
+      />
     </div>
   );
 }
