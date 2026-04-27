@@ -340,11 +340,6 @@ export default function App({ onGoBack }) {
                           📄 Export PDF
                         </button>
                       </div>
-
-                      <p className="text-[10px] font-bold text-ink/40 uppercase tracking-widest text-center">
-                        Processed in batches of 15 · Web Worker · No UI Freeze ·
-                        Rate Limited
-                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -464,54 +459,6 @@ export default function App({ onGoBack }) {
                     Download Preview
                   </a>
                 )}
-              </div>
-            </div>
-
-            {/* Security badge */}
-            <div className="neo-card border-3 border-ink">
-              <div className="p-4 border-b-3 border-ink bg-success/10">
-                <p className="font-black text-xs uppercase tracking-widest text-success">
-                  🔒 Security & Performance
-                </p>
-              </div>
-              <div className="p-4 space-y-3">
-                {[
-                  {
-                    icon: "🧵",
-                    text: "Web Workers — true parallel processing, zero UI freeze",
-                  },
-                  {
-                    icon: "📦",
-                    text: "Chunked batches of 15 — prevents browser memory overload",
-                  },
-                  {
-                    icon: "🛡️",
-                    text: "Rate limited — max 5 generations/minute to prevent abuse",
-                  },
-                  {
-                    icon: "✅",
-                    text: "Pre-validation catches bad rows before any processing starts",
-                  },
-                  {
-                    icon: "🔁",
-                    text: "Retry failed — redo only errored rows, not the whole batch",
-                  },
-                  {
-                    icon: "🗑️",
-                    text: "Auto cleanup — memory freed after each batch (GC-friendly)",
-                  },
-                  {
-                    icon: "🔐",
-                    text: "Everything runs in your browser. Zero server uploads.",
-                  },
-                ].map(({ icon, text }) => (
-                  <div key={text} className="flex gap-3 text-xs">
-                    <span className="flex-shrink-0">{icon}</span>
-                    <p className="text-ink/70 font-medium leading-relaxed">
-                      {text}
-                    </p>
-                  </div>
-                ))}
               </div>
             </div>
 
